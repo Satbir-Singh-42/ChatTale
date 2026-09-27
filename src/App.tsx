@@ -524,6 +524,17 @@ function StoryEditor({
     URL.revokeObjectURL(url)
   }
 
+  const downloadProject = () => {
+    const data = JSON.stringify({ cast, events, settings }, null, 2)
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${settings.channel || "chattale"}-project.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const uploadScript = (file?: File) => {
     if (!file) return
     const reader = new FileReader()
@@ -583,6 +594,13 @@ function StoryEditor({
               className="ml-auto"
             >
               <IconSpark size={15} /> Quick add
+            </Btn>
+            <Btn
+              variant="outline"
+              onClick={downloadProject}
+              title="Download project (.json)"
+            >
+              <IconDownload size={15} /> Backup
             </Btn>
           </div>
 
@@ -689,6 +707,8 @@ function StoryEditor({
             <h3 className="font-display text-sm font-semibold text-white">
               Scene settings
             </h3>
+
+            {/* ── Most-used controls first ── */}
             <Field label="Message flow">
               <div className="flex gap-1 rounded-xl bg-black/30 p-1">
                 {([
@@ -727,6 +747,19 @@ function StoryEditor({
                 ))}
               </div>
             </Field>
+            <Field label="Aspect ratio">
+              <Dropdown
+                value={settings.aspect}
+                onChange={(v) =>
+                  setSettings({ ...settings, aspect: v as Settings["aspect"] })
+                }
+                options={[
+                  { value: "9:16", label: "9:16 · Shorts / Reels / TikTok" },
+                  { value: "1:1", label: "1:1 · Square" },
+                  { value: "16:9", label: "16:9 · YouTube" },
+                ]}
+              />
+            </Field>
             <Field label="Typing speed">
               <div className="flex gap-1 rounded-xl bg-black/30 p-1">
                 {SPEED_PRESETS.map(([label, val]) => (
@@ -759,6 +792,16 @@ function StoryEditor({
                 />
               </Field>
             )}
+
+            {/* ── Less-changed details ── */}
+            <div className="border-t border-white/5 pt-3">
+              <Field label="Background">
+                <ColorField
+                  value={settings.background}
+                  onChange={(v) => setSettings({ ...settings, background: v })}
+                />
+              </Field>
+            </div>
             <Field label="Channel name">
               <input
                 className="ct-input"
@@ -778,31 +821,17 @@ function StoryEditor({
                 }
               />
             </Field>
-            <Field label="Aspect ratio">
-              <Dropdown
-                value={settings.aspect}
-                onChange={(v) =>
-                  setSettings({ ...settings, aspect: v as Settings["aspect"] })
-                }
-                options={[
-                  { value: "9:16", label: "9:16 · Shorts / Reels / TikTok" },
-                  { value: "1:1", label: "1:1 · Square" },
-                  { value: "16:9", label: "16:9 · YouTube" },
-                ]}
-              />
-            </Field>
-            <Field label="Background">
-              <ColorField
-                value={settings.background}
-                onChange={(v) => setSettings({ ...settings, background: v })}
-              />
-            </Field>
+
+            {/* ── Footer stats + backup ── */}
             <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs text-txt-faint">
               <span>{events.length} beats</span>
               <span className="inline-flex items-center gap-1">
                 <IconClock size={13} /> {fmtTime(totalDur)} runtime
               </span>
             </div>
+            <Btn variant="ghost" onClick={downloadProject} className="w-full">
+              <IconDownload size={14} /> Download project (.json)
+            </Btn>
           </Card>
         </aside>
       </div>
