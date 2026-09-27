@@ -997,6 +997,102 @@ function EventRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus])
 
+  const [menuIndex, setMenuIndex] = useState(0)
+  const [tagMenu, setTagMenu] = useState<{ query: string; index: number } | null>(
+    null,
+  )
+
+  const insertTag = (tag: string) => {
+    const input = textRef.current
+    const current = ev.text || ""
+
+    if (!input) {
+      onPatch({ text: current ? `${current} ${tag} ` : `${tag} ` })
+      return
+    }
+
+    const start = input.selectionStart ?? current.length
+    const end = input.selectionEnd ?? current.length
+
+    // Smart spacing around the inserted tag
+    const needsPrefix = start > 0 && current[start - 1] !== " "
+    const needsSuffix = end < current.length && current[end] !== " "
+
+    const insertion = `${needsPrefix ? " " : ""}${tag}${needsSuffix ? " " : " "}`
+    const nextText = current.slice(0, start) + insertion + current.slice(end)
+
+    onPatch({ text: nextText })
+
+    const nextPos = start + insertion.length
+    requestAnimationFrame(() => {
+      input.focus()
+      input.setSelectionRange(nextPos, nextPos)
+    })
+    setTagMenu(null)
+  }
+
+  const suggestions = useMemo(() => {
+    if (!tagMenu) return []
+    const q = tagMenu.query.toLowerCase()
+    const list: {
+      label: string
+      tag: string
+      desc: string
+      color?: string
+      avatar?: CastMember
+    }[] = []
+
+    if ("everyone".includes(q)) {
+      list.push({
+        label: "@everyone",
+        tag: "@everyone",
+        desc: "Notify everyone in channel",
+        color: "#faa61a",
+      })
+    }
+    if ("here".includes(q)) {
+      list.push({
+        label: "@here",
+        tag: "@here",
+        desc: "Notify active members",
+        color: "#faa61a",
+      })
+    }
+    for (const c of cast) {
+      if (c.name.toLowerCase().includes(q)) {
+        list.push({
+          label: `@${c.name}`,
+          tag: c.name.includes(" ") ? `@[${c.name}]` : `@${c.name}`,
+          desc: "Cast member",
+          color: c.color,
+          avatar: c,
+        })
+      }
+    }
+    return list
+  }, [tagMenu, cast])
+
+  const applySuggestion = (tag: string) => {
+    if (!tagMenu) return
+    const input = textRef.current
+    const current = ev.text || ""
+    const start = tagMenu.index
+    const end = input?.selectionStart ?? start + tagMenu.query.length + 1
+
+    const needsSuffix = end < current.length && current[end] !== " "
+    const insertion = `${tag}${needsSuffix ? " " : " "}`
+    const nextText = current.slice(0, start) + insertion + current.slice(end)
+
+    onPatch({ text: nextText })
+    setTagMenu(null)
+
+    const nextPos = start + insertion.length
+    requestAnimationFrame(() => {
+      input?.focus()
+      input?.setSelectionRange(nextPos, nextPos)
+    })
+  }
+
   const isEveryone = ev.type === "message" && /@(everyone|here)\b/i.test(ev.text)
   const isTag =
     ev.type === "message" && !isEveryone && /@[\w.-]+|@\[[^\]]+\]/.test(ev.text)
@@ -1075,19 +1171,117 @@ function EventRow({
         <div className="p-3">
           {ev.type === "message" && (
             <div className="space-y-2">
-              <input
-                ref={textRef}
-                className="ct-input text-[15px]"
-                value={ev.text}
-                placeholder="What do they say?  (Enter for next line)"
-                onChange={(e) => onPatch({ text: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    onAddAfter()
-                  }
-                }}
-              />
+              <div className="relative">
+                <input
+                  ref={textRef}
+                  className="ct-input text-[15px]"
+                  value={ev.text}
+                  placeholder="What do they say?  (Enter for next line, @ for tags)"
+                  onChange={(e) => {
+                    const val = e.target.value
+                    onPatch({ text: val })
+                    const cursor = e.target.selectionStart ?? val.length
+                    const textBeforeCursor = val.slice(0, cursor)
+                    const match = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/)
+                    if (match) {
+                      setTagMenu({ query: match[1], index: match.index! })
+                      setMenuIndex(0)
+                    } else {
+                      setTagMenu(null)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (tagMenu && suggestions.length > 0) {
+                      if (e.key === "ArrowDown") {
+                        e.preventDefault()
+                        setMenuIndex((i) => (i + 1) % suggestions.length)
+                        return
+                      }
+                      if (e.key === "ArrowUp") {
+                        e.preventDefault()
+                        setMenuIndex(
+                          (i) =>
+                            (i - 1 + suggestions.length) % suggestions.length,
+                        )
+                        return
+                      }
+                      if (e.key === "Enter" || e.key === "Tab") {
+                        e.preventDefault()
+                        const sel = suggestions[menuIndex] || suggestions[0]
+                        if (sel) {
+                          applySuggestion(sel.tag)
+                          return
+                        }
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault()
+                        setTagMenu(null)
+                        return
+                      }
+                    }
+
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      onAddAfter()
+                    }
+                  }}
+                />
+
+                {tagMenu && suggestions.length > 0 && (
+                  <div className="absolute bottom-full left-0 z-50 mb-1.5 w-72 overflow-hidden rounded-xl border border-white/10 bg-panel-2 shadow-2xl backdrop-blur-xl">
+                    <div className="border-b border-white/5 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-txt-faint">
+                      Matching @{tagMenu.query}
+                    </div>
+                    <div className="max-h-48 overflow-y-auto p-1">
+                      {suggestions.map((item, idx) => (
+                        <button
+                          key={item.tag}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            applySuggestion(item.tag)
+                          }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition ${
+                            idx === menuIndex
+                              ? "bg-blurple text-white"
+                              : "text-txt-muted hover:bg-white/5 hover:text-txt"
+                          }`}
+                        >
+                          {item.avatar ? (
+                            <Avatar member={item.avatar} size={20} />
+                          ) : (
+                            <span
+                              className="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold"
+                              style={{
+                                background: `${item.color}33`,
+                                color: item.color,
+                              }}
+                            >
+                              @
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="truncate font-semibold"
+                              style={
+                                idx === menuIndex
+                                  ? undefined
+                                  : { color: item.color }
+                              }
+                            >
+                              {item.label}
+                            </div>
+                            <div className="truncate text-[10px] opacity-70">
+                              {item.desc}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <input
                   className="ct-input w-28 py-1 text-xs"
@@ -1096,41 +1290,51 @@ function EventRow({
                   onChange={(e) => onPatch({ timestamp: e.target.value })}
                 />
                 <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-[11px] text-txt-faint">Tags:</span>
+                  <span className="text-[11px] text-txt-faint">
+                    Insert at cursor:
+                  </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      const t = ev.text ? `${ev.text} @everyone` : "@everyone"
-                      onPatch({ text: t })
-                    }}
-                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertTag("@everyone")}
+                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25 active:scale-95"
+                    title="Insert @everyone at current cursor position"
                   >
                     @everyone
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const t = ev.text ? `${ev.text} @here` : "@here"
-                      onPatch({ text: t })
-                    }}
-                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertTag("@here")}
+                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25 active:scale-95"
+                    title="Insert @here at current cursor position"
                   >
                     @here
                   </button>
                   {cast
                     .filter((c) => c.id !== ev.userId)
-                    .slice(0, 3)
                     .map((c) => (
                       <button
                         key={c.id}
                         type="button"
-                        onClick={() => {
-                          const t = ev.text
-                            ? `${ev.text} @${c.name}`
-                            : `@${c.name}`
-                          onPatch({ text: t })
-                        }}
-                        className="rounded bg-blurple/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#c9cdfb] transition hover:bg-blurple/30"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() =>
+                          insertTag(
+                            c.name.includes(" ")
+                              ? `@[${c.name}]`
+                              : `@${c.name}`,
+                          )
+                        }
+                        className="rounded bg-blurple/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#c9cdfb] transition hover:bg-blurple/30 active:scale-95"
+                        style={
+                          c.color
+                            ? {
+                                color: c.color,
+                                backgroundColor: `${c.color}22`,
+                              }
+                            : undefined
+                        }
+                        title={`Insert @${c.name} at current cursor position`}
                       >
                         @{c.name}
                       </button>
