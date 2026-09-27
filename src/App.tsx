@@ -1326,135 +1326,156 @@ function Preview({
         eyebrow="Step 3"
         title="Preview & export"
         sub="This is the exact chat surface your export renders — driven by one timeline clock."
-        action={
-          <Btn onClick={exportVideo} disabled={exporting || !events.length}>
-            <IconDownload size={16} />
-            {exporting ? `Rendering… ${exportPct}%` : "Export video"}
-          </Btn>
-        }
       />
 
-      <div className="flex flex-col items-center gap-6">
-        <div className="relative flex w-full justify-center">
-          <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-blurple/15 blur-3xl" />
-          <div
-            ref={frameRef}
-            className={`relative overflow-hidden rounded-2xl border border-white/10 bg-ink shadow-2xl ${frameClass}`}
-            style={{ aspectRatio: ASPECT[aspect] }}
-          >
-            <ChatStage
-              cast={cast}
-              timed={timed}
-              t={t}
-              settings={settings}
-            />
+      {/* Two-column layout: preview | sticky settings sidebar */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+
+        {/* ── Left: preview frame ── */}
+        <div className="flex flex-1 flex-col items-center gap-4">
+          <div className="relative flex w-full justify-center">
+            <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-blurple/15 blur-3xl" />
+            <div
+              ref={frameRef}
+              className={`relative overflow-hidden rounded-2xl border border-white/10 bg-ink shadow-2xl ${frameClass}`}
+              style={{ aspectRatio: ASPECT[aspect] }}
+            >
+              <ChatStage
+                cast={cast}
+                timed={timed}
+                t={t}
+                settings={settings}
+              />
+            </div>
           </div>
+
+          {/* playback transport — below the preview */}
+          <Card className="w-full max-w-[520px] p-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggle}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
+              >
+                {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
+              </button>
+              <button
+                onClick={restart}
+                className="text-txt-muted transition hover:text-txt"
+                aria-label="Restart"
+              >
+                <IconRestart size={18} />
+              </button>
+              <span className="w-10 text-xs tabular-nums text-txt-muted">
+                {fmtTime(t)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={total}
+                value={t}
+                onChange={(e) => {
+                  setPlaying(false)
+                  setT(+e.target.value)
+                }}
+                className="h-1 flex-1 accent-blurple"
+              />
+              <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
+                {fmtTime(total)}
+              </span>
+              <button
+                onClick={() => {
+                  setSound((s) => !s)
+                  if (!sound) playMessagePing()
+                }}
+                aria-pressed={sound}
+                aria-label={sound ? "Mute message sound" : "Unmute message sound"}
+                title={sound ? "Message sound on" : "Message sound off"}
+                className={`relative shrink-0 transition ${sound
+                    ? "text-blurple hover:text-blurple-hi"
+                    : "text-txt-faint hover:text-txt"
+                  }`}
+              >
+                <IconVolume size={18} />
+                {!sound && (
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
+              <Kbd>Space</Kbd> play
+              <Kbd>R</Kbd> restart
+              <Kbd>←</Kbd>
+              <Kbd>→</Kbd> scrub
+              <Kbd>M</Kbd> mute
+            </p>
+          </Card>
         </div>
 
-        {/* live scene settings — compact 2×2 grid of segmented controls */}
-        <Card className="grid w-full max-w-[520px] gap-x-4 gap-y-2.5 p-4 sm:grid-cols-2">
-          <Segmented
-            label="Aspect"
-            value={settings.aspect}
-            onChange={(v) =>
-              setSettings({ ...settings, aspect: v as Settings["aspect"] })
-            }
-            options={[
-              ["9:16", "9:16"],
-              ["1:1", "1:1"],
-              ["16:9", "16:9"],
-            ]}
-          />
-          <Segmented
-            label="Flow"
-            value={settings.mode}
-            onChange={(v) =>
-              setSettings({ ...settings, mode: v as Settings["mode"] })
-            }
-            options={[
-              ["stack", "Stack"],
-              ["solo", "Solo"],
-            ]}
-          />
-          <Segmented
-            label="Alignment"
-            value={settings.align}
-            onChange={(v) =>
-              setSettings({ ...settings, align: v as Settings["align"] })
-            }
-            options={[
-              ["left", "Left"],
-              ["center", "Center"],
-            ]}
-          />
-          <Segmented
-            label="Typing speed"
-            value={String(settings.typingSpeed)}
-            onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
-            options={SPEED_PRESETS.map(([label, val]) => [String(val), label])}
-          />
-        </Card>
-
-        <Card className="w-full max-w-[520px] p-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggle}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
-            >
-              {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
-            </button>
-            <button
-              onClick={restart}
-              className="text-txt-muted transition hover:text-txt"
-              aria-label="Restart"
-            >
-              <IconRestart size={18} />
-            </button>
-            <span className="w-10 text-xs tabular-nums text-txt-muted">
-              {fmtTime(t)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={total}
-              value={t}
-              onChange={(e) => {
-                setPlaying(false)
-                setT(+e.target.value)
-              }}
-              className="h-1 flex-1 accent-blurple"
+        {/* ── Right: sticky scene settings ── */}
+        <div className="w-full shrink-0 lg:sticky lg:top-24 lg:w-72 xl:w-80">
+          <Card className="flex flex-col gap-4 p-4">
+            <p className="text-xs font-semibold tracking-[0.08em] text-txt-faint uppercase">
+              Scene settings
+            </p>
+            <Segmented
+              label="Aspect"
+              value={settings.aspect}
+              onChange={(v) =>
+                setSettings({ ...settings, aspect: v as Settings["aspect"] })
+              }
+              options={[
+                ["9:16", "9:16"],
+                ["1:1", "1:1"],
+                ["16:9", "16:9"],
+              ]}
             />
-            <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
-              {fmtTime(total)}
-            </span>
-            <button
-              onClick={() => {
-                setSound((s) => !s)
-                if (!sound) playMessagePing()
-              }}
-              aria-pressed={sound}
-              aria-label={sound ? "Mute message sound" : "Unmute message sound"}
-              title={sound ? "Message sound on" : "Message sound off"}
-              className={`relative shrink-0 transition ${sound
-                  ? "text-blurple hover:text-blurple-hi"
-                  : "text-txt-faint hover:text-txt"
-                }`}
+            <Segmented
+              label="Flow"
+              value={settings.mode}
+              onChange={(v) =>
+                setSettings({ ...settings, mode: v as Settings["mode"] })
+              }
+              options={[
+                ["stack", "Stack"],
+                ["solo", "Solo"],
+              ]}
+            />
+            <Segmented
+              label="Alignment"
+              value={settings.align}
+              onChange={(v) =>
+                setSettings({ ...settings, align: v as Settings["align"] })
+              }
+              options={[
+                ["left", "Left"],
+                ["center", "Center"],
+              ]}
+            />
+            <Segmented
+              label="Typing speed"
+              value={String(settings.typingSpeed)}
+              onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
+              options={SPEED_PRESETS.map(([label, val]) => [String(val), label])}
+            />
+            <Segmented
+              label="Message pace"
+              value={String(settings.intervalSpeed || 1)}
+              onChange={(v) => setSettings({ ...settings, intervalSpeed: +v })}
+              options={SPEED_PRESETS.map(([label, val]) => [String(val), label])}
+            />
+            <Btn
+              onClick={exportVideo}
+              disabled={exporting || !events.length}
+              className="w-full"
             >
-              <IconVolume size={18} />
-              {!sound && (
-                <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
-              )}
-            </button>
-          </div>
-          <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
-            <Kbd>Space</Kbd> play
-            <Kbd>R</Kbd> restart
-            <Kbd>←</Kbd>
-            <Kbd>→</Kbd> scrub
-            <Kbd>M</Kbd> mute
-          </p>
-        </Card>
+              <IconDownload size={16} />
+              {exporting ? `Rendering… ${exportPct}%` : "Export MP4"}
+            </Btn>
+          </Card>
+        </div>
+
       </div>
+
     </section>
   )
 }
