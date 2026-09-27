@@ -1,19 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7983f5" />
-      <stop offset="1" stop-color="#4752c4" />
+    <!-- Richer 3-stop gradient -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8ea1fa" />
+      <stop offset="0.5" stop-color="#5865f2" />
+      <stop offset="1" stop-color="#3a43b8" />
     </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#g)" />
-  <path
-    d="M47 34.5a4.5 4.5 0 0 1-4.5 4.5H26L16 46.5V17.5A4.5 4.5 0 0 1 20.5 13h22a4.5 4.5 0 0 1 4.5 4.5z"
-    fill="none"
-    stroke="#fff"
-    stroke-width="3.5"
-    stroke-linejoin="round"
-  />
-  <circle cx="26" cy="26" r="2.6" fill="#fff" />
-  <circle cx="32.5" cy="26" r="2.6" fill="#fff" />
-  <circle cx="39" cy="26" r="2.6" fill="#fff" />
+  <!-- App Icon Base -->
+  <rect width="64" height="64" rx="16" fill="url(#bg)" />
+  <!-- Chat Bubble -->
+  <g filter="url(#shadow)">
+    <path
+      d="M47 34.5a4.5 4.5 0 0 1-4.5 4.5H26L15 47.5V17.5A4.5 4.5 0 0 1 19.5 13h23a4.5 4.5 0 0 1 4.5 4.5z"
+      fill="#ffffff"
+    />
+    <!-- Typing Dots -->
+    <circle cx="23.5" cy="27" r="3" fill="#5865f2" />
+    <circle cx="31.5" cy="27" r="3" fill="#5865f2" opacity="0.75" />
+    <circle cx="39.5" cy="27" r="3" fill="#5865f2" opacity="0.5" />
+  </g>
 </svg>
