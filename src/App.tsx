@@ -20,6 +20,7 @@ import {
   findMember,
   parseScript,
   eventsToScript,
+  autoTimestamp,
   uid,
 } from "./chattale/lib"
 import type {
@@ -592,6 +593,12 @@ function StoryEditor({
     0,
   )
 
+  const timedStory = useMemo(
+    () =>
+      buildTimeline(events, settings.typingSpeed, settings.intervalSpeed).timed,
+    [events, settings.typingSpeed, settings.intervalSpeed],
+  )
+
   const addBtns: { type: EventType }[] = [
     { type: "message" },
     { type: "join" },
@@ -732,6 +739,11 @@ function StoryEditor({
                       first={idx === 0}
                       last={idx === events.length - 1}
                       speed={settings.typingSpeed}
+                      defaultTimestamp={autoTimestamp(
+                        settings.startTime ?? "09:03",
+                        timedStory[idx]?.revealAt ?? 0,
+                        idx,
+                      )}
                       autoFocus={ev.id === focusId}
                       onMove={(d) => move(idx, d)}
                       onPatch={(p) => patch(ev.id, p)}
@@ -968,6 +980,7 @@ function EventRow({
   first,
   last,
   speed,
+  defaultTimestamp,
   autoFocus,
   onMove,
   onPatch,
@@ -980,6 +993,7 @@ function EventRow({
   first: boolean
   last: boolean
   speed: number
+  defaultTimestamp: string
   autoFocus: boolean
   onMove: (d: -1 | 1) => void
   onPatch: (p: Partial<StoryEvent>) => void
@@ -1254,13 +1268,18 @@ function EventRow({
                 )}
               </div>
 
-              <div>
+              <div className="flex items-center gap-2">
                 <input
-                  className="ct-input w-28 py-1 text-xs"
-                  placeholder="9:03 AM"
+                  className="ct-input w-44 py-1 text-xs"
+                  placeholder={defaultTimestamp}
                   value={ev.timestamp}
                   onChange={(e) => onPatch({ timestamp: e.target.value })}
                 />
+                {!ev.timestamp && (
+                  <span className="text-[11px] text-txt-faint">
+                    (auto: {defaultTimestamp})
+                  </span>
+                )}
               </div>
             </div>
           )}

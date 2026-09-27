@@ -84,13 +84,28 @@ export function fmtTime(ms: number) {
 
 /**
  * Derive an AM/PM clock label from a start-time string ("HH:MM") plus the
- * number of milliseconds into the timeline. Used to auto-generate timestamps
- * for messages that have no explicit timestamp set.
+ * progress into the timeline. Scales dynamically so chat conversations in short videos
+ * naturally advance time (e.g. 1-2 minutes per response) rather than staying static.
  */
-export function autoTimestamp(startTime: string, offsetMs: number): string {
-  const [hStr, mStr] = startTime.split(":")
-  const baseMinutes = (parseInt(hStr, 10) || 9) * 60 + (parseInt(mStr, 10) || 0)
-  const totalMinutes = baseMinutes + Math.floor(offsetMs / 60_000)
+export function autoTimestamp(
+  startTime: string,
+  offsetMs: number,
+  index = 0,
+): string {
+  const [hStr, mStr] = (startTime || "09:03").split(":")
+  const parsedH = parseInt(hStr, 10)
+  const parsedM = parseInt(mStr, 10)
+  const baseH = Number.isNaN(parsedH) ? 9 : parsedH
+  const baseM = Number.isNaN(parsedM) ? 3 : parsedM
+  const baseMinutes = baseH * 60 + baseM
+
+  // Scale offsetMs so ~3.2 seconds of video timeline advances ~1 minute of chat time,
+  // and ensure consecutive messages naturally progress across beats.
+  const timeMinutes = Math.floor(offsetMs / 3200)
+  const indexMinutes = Math.floor(index * 0.7)
+  const addedMinutes = Math.max(timeMinutes, indexMinutes)
+
+  const totalMinutes = baseMinutes + addedMinutes
   const h24 = totalMinutes % (24 * 60)
   const h = Math.floor(h24 / 60) % 24
   const m = h24 % 60

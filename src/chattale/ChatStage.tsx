@@ -268,6 +268,7 @@ export default function ChatStage({
                       autoTimestamp(
                         settings.startTime ?? "09:03",
                         ev.revealAt,
+                        timed.findIndex((e) => e.id === ev.id),
                       )}
                   </span>
                 </div>
