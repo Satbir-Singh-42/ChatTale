@@ -9,6 +9,8 @@ import ColorField from "./chattale/ColorField"
 import { playMessagePing, getAudioStream } from "./chattale/sound"
 import { clearProject, loadProject, saveProject } from "./chattale/storage"
 import { toCanvas } from "html-to-image"
+import { FFmpeg } from "@ffmpeg/ffmpeg"
+import { fetchFile } from "@ffmpeg/util"
 import {
   DISCORD_COLORS,
   buildTimeline,
@@ -1193,9 +1195,9 @@ function Preview({
     return () => window.removeEventListener("keydown", onKey)
   })
 
-  // Client-side render: play the timeline in real time while rasterizing the
-  // frame to an offscreen canvas whose captureStream feeds a MediaRecorder.
-  // Produces a WebM (browsers can't natively encode MP4 without ffmpeg).
+  // Client-side render: play the timeline in real time while rasterizing
+  // each frame onto an offscreen canvas. MediaRecorder captures WebM;
+  // FFmpeg.wasm then transcodes it to high-quality MP4 client-side.
   const exportVideo = async () => {
     const node = frameRef.current
     if (!node || exporting) return
@@ -1209,7 +1211,8 @@ function Preview({
     setExportPct(0)
 
     const rect = node.getBoundingClientRect()
-    const scale = 2
+    // 4× pixel ratio = 4K-class output (e.g. 9:16 → 2160×3840)
+    const scale = 4
     const cw = Math.round(rect.width * scale)
     const ch = Math.round(rect.height * scale)
     const canvas = document.createElement("canvas")
@@ -1222,7 +1225,7 @@ function Preview({
         (m) => MediaRecorder.isTypeSupported(m),
       ) ?? "video/webm"
     const stream = canvas.captureStream(30)
-    
+
     // Add audio track if available
     const audioStream = getAudioStream()
     if (audioStream) {
@@ -1232,23 +1235,14 @@ function Preview({
 
     const rec = new MediaRecorder(stream, {
       mimeType: mime,
-      videoBitsPerSecond: 8_000_000,
+      videoBitsPerSecond: 40_000_000, // 40 Mbps for 4K quality
     })
     const chunks: BlobPart[] = []
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
 
-    const finish = () =>
-      new Promise<void>((resolve) => {
-        rec.onstop = () => {
-          const blob = new Blob(chunks, { type: "video/webm" })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = `${settings.channel || "chattale"}.webm`
-          a.click()
-          URL.revokeObjectURL(url)
-          resolve()
-        }
+    const stopRecorder = () =>
+      new Promise<Blob>((resolve) => {
+        rec.onstop = () => resolve(new Blob(chunks, { type: "video/webm" }))
         rec.stop()
       })
 
@@ -1263,8 +1257,7 @@ function Preview({
       const elapsed = performance.now() - start
       const tt = Math.min(elapsed, total)
       setT(tt)
-      setExportPct(Math.round((tt / total) * 100))
-      // let React commit, then rasterize the current DOM state
+      setExportPct(Math.round((tt / total) * 80)) // 0-80% = recording phase
       await nextFrame()
       await nextFrame()
       try {
@@ -1279,7 +1272,49 @@ function Preview({
       if (tt >= total) break
     }
 
-    await finish()
+    const webmBlob = await stopRecorder()
+
+    // Transcode WebM → MP4 using FFmpeg.wasm
+    try {
+      setExportPct(82)
+      const ffmpeg = new FFmpeg()
+      await ffmpeg.load()
+      setExportPct(88)
+      ffmpeg.on("progress", ({ progress }) => {
+        setExportPct(88 + Math.round(progress * 10))
+      })
+      await ffmpeg.writeFile("in.webm", await fetchFile(webmBlob))
+      await ffmpeg.exec([
+        "-i", "in.webm",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "16",          // near-lossless quality (0=perfect, 51=worst)
+        "-c:a", "aac",
+        "-movflags", "+faststart",
+        "out.mp4",
+      ])
+      const mp4Data = await ffmpeg.readFile("out.mp4")
+      // Ensure we have a plain ArrayBuffer (FFmpeg can return SharedArrayBuffer)
+      const raw = mp4Data instanceof Uint8Array ? mp4Data : new TextEncoder().encode(mp4Data as string)
+      const plainBuf = new Uint8Array(raw).buffer as ArrayBuffer
+      const mp4Blob = new Blob([plainBuf], { type: "video/mp4" })
+      const url = URL.createObjectURL(mp4Blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${settings.channel || "chattale"}.mp4`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      // Fallback: if FFmpeg fails, download the raw WebM
+      console.error("FFmpeg transcoding failed, downloading WebM instead:", err)
+      const url = URL.createObjectURL(webmBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${settings.channel || "chattale"}.webm`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+
     setExporting(false)
     setExportPct(0)
     setT(0)
@@ -1307,26 +1342,12 @@ function Preview({
             className={`relative overflow-hidden rounded-2xl border border-white/10 bg-ink shadow-2xl ${frameClass}`}
             style={{ aspectRatio: ASPECT[aspect] }}
           >
-            <div className="flex h-full">
-              {/* chat surface — the exact aspect the export renders */}
-              <div className="relative min-w-0 flex-1">
-                <div className="flex items-center gap-2 border-b border-black/40 bg-panel-2 px-4 py-2.5">
-                  <span className="text-txt-faint">#</span>
-                  <span className="text-sm font-semibold text-white">
-                    {settings.channel}
-                  </span>
-                  <span className="ml-auto h-2 w-2 rounded-full bg-online" />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 top-[45px]">
-                  <ChatStage
-                    cast={cast}
-                    timed={timed}
-                    t={t}
-                    settings={settings}
-                  />
-                </div>
-              </div>
-            </div>
+            <ChatStage
+              cast={cast}
+              timed={timed}
+              t={t}
+              settings={settings}
+            />
           </div>
         </div>
 
