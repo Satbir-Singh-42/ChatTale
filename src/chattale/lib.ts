@@ -82,6 +82,23 @@ export function fmtTime(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
+/**
+ * Derive an AM/PM clock label from a start-time string ("HH:MM") plus the
+ * number of milliseconds into the timeline. Used to auto-generate timestamps
+ * for messages that have no explicit timestamp set.
+ */
+export function autoTimestamp(startTime: string, offsetMs: number): string {
+  const [hStr, mStr] = startTime.split(":")
+  const baseMinutes = (parseInt(hStr, 10) || 9) * 60 + (parseInt(mStr, 10) || 0)
+  const totalMinutes = baseMinutes + Math.floor(offsetMs / 60_000)
+  const h24 = totalMinutes % (24 * 60)
+  const h = Math.floor(h24 / 60) % 24
+  const m = h24 % 60
+  const ampm = h >= 12 ? "PM" : "AM"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `Today at ${h12}:${String(m).padStart(2, "0")} ${ampm}`
+}
+
 // Parse quick-add shorthand into events, creating cast members as needed.
 export function parseScript(
   raw: string,
@@ -152,4 +169,5 @@ export const defaultSettings: Settings = {
   align: "left",
   typingSpeed: 1,
   intervalSpeed: 1,
+  startTime: "09:03",
 }

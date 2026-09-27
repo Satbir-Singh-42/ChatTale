@@ -1,5 +1,5 @@
 import type { CastMember, Settings, TimedEvent } from "./types"
-import { findMember, initials } from "./lib"
+import { findMember, initials, autoTimestamp } from "./lib"
 import { IconEnter, IconExit, IconSmile } from "./icons"
 
 export function Avatar({
@@ -148,7 +148,11 @@ export default function ChatStage({
                   </span>
                   {m?.badge ? <Badge label={m.badge} /> : null}
                   <span className="text-xs text-txt-faint">
-                    {ev.timestamp || "Today at 9:03 AM"}
+                    {ev.timestamp ||
+                      autoTimestamp(
+                        settings.startTime ?? "09:03",
+                        ev.revealAt,
+                      )}
                   </span>
                 </div>
                 <div className="mt-0.5 text-[15px] leading-snug break-words text-txt">

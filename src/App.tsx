@@ -766,6 +766,16 @@ function StoryEditor({
                 }
               />
             </Field>
+            <Field label="Conversation start time">
+              <input
+                type="time"
+                className="ct-input"
+                value={settings.startTime ?? "09:03"}
+                onChange={(e) =>
+                  setSettings({ ...settings, startTime: e.target.value })
+                }
+              />
+            </Field>
             <Field label="Aspect ratio">
               <Dropdown
                 value={settings.aspect}

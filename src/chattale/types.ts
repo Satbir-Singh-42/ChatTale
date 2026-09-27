@@ -33,6 +33,8 @@ export type Settings = {
   typingSpeed: number
   // gap between messages multiplier: 1 = normal, 2 = twice as fast (shorter gap)
   intervalSpeed: number
+  // clock time the conversation starts at, e.g. "09:03" — drives auto timestamps
+  startTime: string
 }
 
 export type TimedEvent = StoryEvent & {
