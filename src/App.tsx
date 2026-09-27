@@ -79,7 +79,7 @@ const SPEED_PRESETS: [string, number][] = [
 const EVENT_META: Record<EventType, {
   label: string
   color: string
-  Icon: ComponentType<{ size?: number; className?: string }>
+  Icon: ComponentType<{ size?: number, className?: string }>
 }> = {
   message: { label: "Message", color: "#5865f2", Icon: IconMessage },
   join: { label: "Join", color: "#23a55a", Icon: IconEnter },
@@ -197,8 +197,8 @@ export default function App() {
 
 /* ---------------------------------- Stepper --------------------------------- */
 
-function Stepper({ step, setStep }: { step: Step; setStep: (s: Step) => void }) {
-  const items: { key: Step; label: string; n: number }[] = [
+function Stepper({ step, setStep }: { step: Step, setStep: (s: Step) => void }) {
+  const items: { key: Step, label: string, n: number }[] = [
     { key: "cast", label: "Cast", n: 1 },
     { key: "story", label: "Storyboard", n: 2 },
     { key: "preview", label: "Preview", n: 3 },
@@ -291,9 +291,9 @@ function CastBuilder({
             No characters yet
           </p>
           <p className="max-w-md text-sm text-txt-muted">
-            This step is optional — skip straight to the storyboard and use Quick
-            add, which creates characters from the names in your script. You can
-            also add one now and rename it later.
+            This step is optional — skip straight to the storyboard and use
+            Quick add, which creates characters from the names in your script.
+            You can also add one now and rename it later.
           </p>
         </Card>
       )}
@@ -528,6 +528,17 @@ function StoryEditor({
     URL.revokeObjectURL(url)
   }
 
+  const downloadProject = () => {
+    const data = JSON.stringify({ cast, events, settings }, null, 2)
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${settings.channel || "chattale"}-project.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const uploadScript = (file?: File) => {
     if (!file) return
     const reader = new FileReader()
@@ -539,7 +550,8 @@ function StoryEditor({
   }
 
   const totalDur = events.reduce(
-    (a, e) => a + eventDuration(e, settings.typingSpeed),
+    (a, e) =>
+      a + eventDuration(e, settings.typingSpeed, settings.intervalSpeed),
     0,
   )
 
@@ -587,6 +599,13 @@ function StoryEditor({
               className="ml-auto"
             >
               <IconSpark size={15} /> Quick add
+            </Btn>
+            <Btn
+              variant="outline"
+              onClick={downloadProject}
+              title="Download project"
+            >
+              <IconDownload size={15} /> Backup
             </Btn>
           </div>
 
@@ -1083,8 +1102,8 @@ function Preview({
       ? "w-full max-w-[880px]"
       : "w-full max-w-[560px]"
   const { timed, total } = useMemo(
-    () => buildTimeline(events, settings.typingSpeed),
-    [events, settings.typingSpeed],
+    () => buildTimeline(events, settings.typingSpeed, settings.intervalSpeed),
+    [events, settings.typingSpeed, settings.intervalSpeed],
   )
   const [t, setT] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -1326,107 +1345,121 @@ function Preview({
         <div className="flex w-full shrink-0 flex-col gap-6 sm:max-w-[520px] lg:max-w-[360px]">
           {/* live scene settings */}
           <Card className="grid w-full gap-x-4 gap-y-3 p-4 sm:grid-cols-2 lg:grid-cols-1">
-          <Segmented
-            label="Aspect"
-            value={settings.aspect}
-            onChange={(v) =>
-              setSettings({ ...settings, aspect: v as Settings["aspect"] })
-            }
-            options={[
-              ["9:16", "9:16"],
-              ["1:1", "1:1"],
-              ["16:9", "16:9"],
-            ]}
-          />
-          <Segmented
-            label="Flow"
-            value={settings.mode}
-            onChange={(v) =>
-              setSettings({ ...settings, mode: v as Settings["mode"] })
-            }
-            options={[
-              ["stack", "Stack"],
-              ["solo", "Solo"],
-            ]}
-          />
-          <Segmented
-            label="Alignment"
-            value={settings.align}
-            onChange={(v) =>
-              setSettings({ ...settings, align: v as Settings["align"] })
-            }
-            options={[
-              ["left", "Left"],
-              ["center", "Center"],
-            ]}
-          />
-          <Segmented
-            label="Typing speed"
-            value={String(settings.typingSpeed)}
-            onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
-            options={SPEED_PRESETS.map(([label, val]) => [String(val), label])}
-          />
-        </Card>
+            <Segmented
+              label="Aspect"
+              value={settings.aspect}
+              onChange={(v) =>
+                setSettings({ ...settings, aspect: v as Settings["aspect"] })
+              }
+              options={[
+                ["9:16", "9:16"],
+                ["1:1", "1:1"],
+                ["16:9", "16:9"],
+              ]}
+            />
+            <Segmented
+              label="Flow"
+              value={settings.mode}
+              onChange={(v) =>
+                setSettings({ ...settings, mode: v as Settings["mode"] })
+              }
+              options={[
+                ["stack", "Stack"],
+                ["solo", "Solo"],
+              ]}
+            />
+            <Segmented
+              label="Alignment"
+              value={settings.align}
+              onChange={(v) =>
+                setSettings({ ...settings, align: v as Settings["align"] })
+              }
+              options={[
+                ["left", "Left"],
+                ["center", "Center"],
+              ]}
+            />
+            <Segmented
+              label="Typing speed"
+              value={String(settings.typingSpeed)}
+              onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
+              options={SPEED_PRESETS.map(([label, val]) => [
+                String(val),
+                label,
+              ])}
+            />
+            <Segmented
+              label="Message pace"
+              value={String(settings.intervalSpeed || 1)}
+              onChange={(v) => setSettings({ ...settings, intervalSpeed: +v })}
+              options={SPEED_PRESETS.map(([label, val]) => [
+                String(val),
+                label,
+              ])}
+            />
+          </Card>
 
           <Card className="w-full p-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggle}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
-            >
-              {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
-            </button>
-            <button
-              onClick={restart}
-              className="text-txt-muted transition hover:text-txt"
-              aria-label="Restart"
-            >
-              <IconRestart size={18} />
-            </button>
-            <span className="w-10 text-xs tabular-nums text-txt-muted">
-              {fmtTime(t)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={total}
-              value={t}
-              onChange={(e) => {
-                setPlaying(false)
-                setT(+e.target.value)
-              }}
-              className="h-1 flex-1 accent-blurple"
-            />
-            <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
-              {fmtTime(total)}
-            </span>
-            <button
-              onClick={() => {
-                setSound((s) => !s)
-                if (!sound) playMessagePing()
-              }}
-              aria-pressed={sound}
-              aria-label={sound ? "Mute message sound" : "Unmute message sound"}
-              title={sound ? "Message sound on" : "Message sound off"}
-              className={`relative shrink-0 transition ${
-                sound
-                  ? "text-blurple hover:text-blurple-hi"
-                  : "text-txt-faint hover:text-txt"
-              }`}
-            >
-              <IconVolume size={18} />
-              {!sound && (
-                <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
-              )}
-            </button>
-          </div>
-          <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
-            <Kbd>Space</Kbd> play
-            <Kbd>R</Kbd> restart
-            <Kbd>←</Kbd>
-            <Kbd>→</Kbd> scrub
-            <Kbd>M</Kbd> mute
-          </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggle}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
+              >
+                {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
+              </button>
+              <button
+                onClick={restart}
+                className="text-txt-muted transition hover:text-txt"
+                aria-label="Restart"
+              >
+                <IconRestart size={18} />
+              </button>
+              <span className="w-10 text-xs tabular-nums text-txt-muted">
+                {fmtTime(t)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={total}
+                value={t}
+                onChange={(e) => {
+                  setPlaying(false)
+                  setT(+e.target.value)
+                }}
+                className="h-1 flex-1 accent-blurple"
+              />
+              <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
+                {fmtTime(total)}
+              </span>
+              <button
+                onClick={() => {
+                  setSound((s) => !s)
+                  if (!sound) playMessagePing()
+                }}
+                aria-pressed={sound}
+                aria-label={
+                  sound ? "Mute message sound" : "Unmute message sound"
+                }
+                title={sound ? "Message sound on" : "Message sound off"}
+                className={`relative shrink-0 transition ${
+                  sound
+                    ? "text-blurple hover:text-blurple-hi"
+                    : "text-txt-faint hover:text-txt"
+                }`}
+              >
+                <IconVolume size={18} />
+                {!sound && (
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
+              <Kbd>Space</Kbd> play
+              <Kbd>R</Kbd> restart
+              <Kbd>←</Kbd>
+              <Kbd>→</Kbd> scrub
+              <Kbd>M</Kbd> mute
+            </p>
           </Card>
         </div>
       </div>

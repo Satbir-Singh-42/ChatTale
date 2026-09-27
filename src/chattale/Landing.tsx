@@ -79,7 +79,9 @@ function HeroMock() {
               </div>
               <div className="mt-1.5 flex gap-1.5">
                 <span className="ct-pop inline-flex items-center gap-1 rounded-md bg-black/25 px-1.5 py-0.5 text-sm ring-1 ring-blurple/40">
-                  <span className="text-xs font-semibold text-txt-muted">1</span>
+                  <span className="text-xs font-semibold text-txt-muted">
+                    1
+                  </span>
                 </span>
               </div>
             </div>
@@ -278,7 +280,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
+      <section
+        id="how"
+        className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6"
+      >
         <div className="mb-12 text-center">
           <div className="text-xs font-semibold tracking-[0.12em] text-blurple-hi uppercase">
             How it works
@@ -349,7 +354,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
+      <section
+        id="faq"
+        className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6"
+      >
         <div className="mb-10 text-center">
           <div className="text-xs font-semibold tracking-[0.12em] text-blurple-hi uppercase">
             FAQ
@@ -362,7 +370,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* CTA */}
-      <section id="start" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
+      <section
+        id="start"
+        className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6"
+      >
         <Card glow className="overflow-hidden p-10 text-center sm:p-16">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 flex justify-center">

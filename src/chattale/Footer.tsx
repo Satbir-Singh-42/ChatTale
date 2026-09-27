@@ -5,7 +5,7 @@ type FooterProps = {
   onHome: () => void
 }
 
-const COLUMNS: { title: string; links: { label: string; id: string }[] }[] = [
+const COLUMNS: { title: string, links: { label: string, id: string }[] }[] = [
   {
     title: "Product",
     links: [

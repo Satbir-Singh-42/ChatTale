@@ -1,4 +1,4 @@
-type IconProps = { className?: string; size?: number }
+type IconProps = { className?: string, size?: number }
 
 const svg = (path: React.ReactNode) =>
   function Icon({ className = "", size = 18 }: IconProps) {

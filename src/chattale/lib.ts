@@ -45,32 +45,36 @@ export function readDuration(ev: StoryEvent) {
 }
 
 // Total on-screen time an event occupies (typing + read), for editor badges.
-export function eventDuration(ev: StoryEvent, speed = 1) {
-  const read = readDuration(ev)
+export function eventDuration(ev: StoryEvent, speed = 1, intervalSpeed = 1) {
+  const read = readDuration(ev) / intervalSpeed
   if (ev.type === "message") return typingDuration(ev, speed) + read
   return read
 }
 
-export function buildTimeline(events: StoryEvent[], speed = 1): {
+export function buildTimeline(
+  events: StoryEvent[],
+  speed = 1,
+  intervalSpeed = 1,
+): {
   timed: TimedEvent[]
   total: number
 } {
-  let cursor = 400 // small lead-in
+  let cursor = 400 / intervalSpeed
   const timed: TimedEvent[] = events.map((ev) => {
     if (ev.type === "message") {
       const typingStart = cursor
       const typingEnd = typingStart + typingDuration(ev, speed)
       const revealAt = typingEnd
-      const end = revealAt + readDuration(ev)
+      const end = revealAt + readDuration(ev) / intervalSpeed
       cursor = end
       return { ...ev, typingStart, typingEnd, revealAt, end }
     }
     const revealAt = cursor
-    const end = revealAt + readDuration(ev)
+    const end = revealAt + readDuration(ev) / intervalSpeed
     cursor = end
     return { ...ev, typingStart: revealAt, typingEnd: revealAt, revealAt, end }
   })
-  return { timed, total: cursor + 600 }
+  return { timed, total: cursor + 600 / intervalSpeed }
 }
 
 export function fmtTime(ms: number) {
@@ -82,7 +86,7 @@ export function fmtTime(ms: number) {
 export function parseScript(
   raw: string,
   cast: CastMember[],
-): { events: StoryEvent[]; cast: CastMember[] } {
+): { events: StoryEvent[], cast: CastMember[] } {
   const nextCast = [...cast]
   const events: StoryEvent[] = []
   let colorIdx = nextCast.length
@@ -147,4 +151,5 @@ export const defaultSettings: Settings = {
   mode: "stack",
   align: "left",
   typingSpeed: 1,
+  intervalSpeed: 1,
 }

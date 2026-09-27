@@ -31,6 +31,8 @@ export type Settings = {
   align: "left" | "center"
   // typing-speed multiplier: 1 = normal, 2 = twice as fast (shorter typing)
   typingSpeed: number
+  // gap between messages multiplier: 1 = normal, 2 = twice as fast (shorter gap)
+  intervalSpeed: number
 }
 
 export type TimedEvent = StoryEvent & {

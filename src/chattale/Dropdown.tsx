@@ -9,7 +9,7 @@ export type DropdownOption = {
   leading?: ReactNode
 }
 
-type Pos = { left: number; top: number; width: number; drop: "down" | "up" }
+type Pos = { left: number, top: number, width: number, drop: "down" | "up" }
 
 export default function Dropdown({
   value,
