@@ -1291,8 +1291,8 @@ function Preview({
         }
       />
 
-      <div className="flex flex-col items-center gap-6">
-        <div className="relative flex w-full justify-center">
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-8 lg:flex-row lg:items-start lg:gap-12">
+        <div className="relative flex w-full justify-center lg:flex-1 lg:justify-end">
           <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-blurple/15 blur-3xl" />
           <div
             ref={frameRef}
@@ -1322,8 +1322,10 @@ function Preview({
           </div>
         </div>
 
-        {/* live scene settings — compact 2×2 grid of segmented controls */}
-        <Card className="grid w-full max-w-[520px] gap-x-4 gap-y-2.5 p-4 sm:grid-cols-2">
+        {/* Settings and controls sidebar */}
+        <div className="flex w-full shrink-0 flex-col gap-6 sm:max-w-[520px] lg:max-w-[360px]">
+          {/* live scene settings */}
+          <Card className="grid w-full gap-x-4 gap-y-3 p-4 sm:grid-cols-2 lg:grid-cols-1">
           <Segmented
             label="Aspect"
             value={settings.aspect}
@@ -1366,7 +1368,7 @@ function Preview({
           />
         </Card>
 
-        <Card className="w-full max-w-[520px] p-3">
+          <Card className="w-full p-3">
           <div className="flex items-center gap-3">
             <button
               onClick={toggle}
@@ -1425,7 +1427,8 @@ function Preview({
             <Kbd>→</Kbd> scrub
             <Kbd>M</Kbd> mute
           </p>
-        </Card>
+          </Card>
+        </div>
       </div>
     </section>
   )
