@@ -997,17 +997,29 @@ function EventRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus])
 
+  const isEveryone = ev.type === "message" && /@(everyone|here)\b/i.test(ev.text)
+  const isTag =
+    ev.type === "message" && !isEveryone && /@[\w.-]+|@\[[^\]]+\]/.test(ev.text)
+
   return (
     <div className="group relative flex gap-3 pl-8">
       {/* timeline node */}
       <div
         className="absolute left-2 top-4 z-10 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-[#0a0a0f]"
-        style={{ background: meta.color }}
+        style={{ background: isEveryone ? "#faa61a" : meta.color }}
       >
         <span className="text-[9px] font-bold text-black/70">{index + 1}</span>
       </div>
 
-      <div className="ct-card-hl flex-1 overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] transition hover:border-white/10">
+      <div
+        className={`ct-card-hl flex-1 overflow-hidden rounded-2xl border transition ${
+          isEveryone
+            ? "border-[#faa61a]/40 bg-[#faa61a]/[0.03]"
+            : isTag
+              ? "border-blurple/40 bg-blurple/[0.03]"
+              : "border-white/5 bg-white/[0.03] hover:border-white/10"
+        }`}
+      >
         {/* header */}
         <div className="flex flex-wrap items-center gap-2 border-b border-white/5 bg-white/[0.02] px-3 py-2">
           <span
@@ -1076,12 +1088,55 @@ function EventRow({
                   }
                 }}
               />
-              <input
-                className="ct-input w-32 py-1 text-xs"
-                placeholder="9:03 AM"
-                value={ev.timestamp}
-                onChange={(e) => onPatch({ timestamp: e.target.value })}
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <input
+                  className="ct-input w-28 py-1 text-xs"
+                  placeholder="9:03 AM"
+                  value={ev.timestamp}
+                  onChange={(e) => onPatch({ timestamp: e.target.value })}
+                />
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-[11px] text-txt-faint">Tags:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const t = ev.text ? `${ev.text} @everyone` : "@everyone"
+                      onPatch({ text: t })
+                    }}
+                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25"
+                  >
+                    @everyone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const t = ev.text ? `${ev.text} @here` : "@here"
+                      onPatch({ text: t })
+                    }}
+                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25"
+                  >
+                    @here
+                  </button>
+                  {cast
+                    .filter((c) => c.id !== ev.userId)
+                    .slice(0, 3)
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          const t = ev.text
+                            ? `${ev.text} @${c.name}`
+                            : `@${c.name}`
+                          onPatch({ text: t })
+                        }}
+                        className="rounded bg-blurple/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#c9cdfb] transition hover:bg-blurple/30"
+                      >
+                        @{c.name}
+                      </button>
+                    ))}
+                </div>
+              </div>
             </div>
           )}
           {ev.type === "reaction" && (
@@ -1206,7 +1261,10 @@ function Preview({
               e.revealAt > prev &&
               e.revealAt <= next
             ) {
-              playMessagePing()
+              const isEveryone = /@(everyone|here)\b/i.test(e.text)
+              const isTag =
+                !isEveryone && /@[\w.-]+|@\[[^\]]+\]/.test(e.text)
+              playMessagePing(isEveryone || isTag)
               break
             }
           }
@@ -1342,6 +1400,7 @@ function Preview({
     const nextFrame = () =>
       new Promise<void>((r) => requestAnimationFrame(() => r()))
 
+    let lastT = 0
     // Drive real time -> t so the recorded duration matches the timeline.
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -1349,6 +1408,17 @@ function Preview({
       const tt = Math.min(elapsed, total)
       setT(tt)
       setExportPct(Math.round((tt / total) * 80)) // 0-80% = recording phase
+
+      // Trigger audio pings in recorded stream
+      for (const e of timed) {
+        if (e.type === "message" && e.revealAt > lastT && e.revealAt <= tt) {
+          const isEveryone = /@(everyone|here)\b/i.test(e.text)
+          const isTag =
+            !isEveryone && /@[\w.-]+|@\[[^\]]+\]/.test(e.text)
+          playMessagePing(isEveryone || isTag)
+        }
+      }
+      lastT = tt
       await nextFrame()
       await nextFrame()
       try {

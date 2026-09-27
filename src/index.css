@@ -191,6 +191,97 @@ body {
   animation: ct-bounce 1.1s infinite ease-in-out;
 }
 
+/* Discord Mention Effects */
+@keyframes ct-mention-flash {
+  0% {
+    background-color: rgba(250, 166, 26, 0.35);
+  }
+  100% {
+    background-color: rgba(250, 166, 26, 0.12);
+  }
+}
+
+@keyframes ct-mention-flash-blurple {
+  0% {
+    background-color: rgba(88, 101, 242, 0.35);
+  }
+  100% {
+    background-color: rgba(88, 101, 242, 0.12);
+  }
+}
+
+@keyframes ct-tag-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(250, 166, 26, 0);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 10px 2px rgba(250, 166, 26, 0.45);
+  }
+}
+
+@keyframes ct-tag-blurple-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(88, 101, 242, 0);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 10px 2px rgba(88, 101, 242, 0.35);
+  }
+}
+
+.ct-mention-everyone {
+  background-color: rgba(250, 166, 26, 0.12);
+  border-left: 3px solid #faa61a !important;
+  animation: ct-mention-flash 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ct-mention-tag {
+  background-color: rgba(88, 101, 242, 0.12);
+  border-left: 3px solid #5865f2 !important;
+  animation: ct-mention-flash-blurple 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ct-tag-everyone {
+  background-color: rgba(250, 166, 26, 0.18);
+  color: #f0b232;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(250, 166, 26, 0.35);
+  animation: ct-tag-pulse 2.2s infinite ease-in-out;
+}
+
+.ct-tag-mention {
+  background-color: rgba(88, 101, 242, 0.22);
+  color: #c9cdfb;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(88, 101, 242, 0.35);
+  animation: ct-tag-blurple-pulse 2.5s infinite ease-in-out;
+}
+
+.ct-tag-channel {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #949ba4;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* The chat surface animates in real time during export, so a "no motion"
    pass would freeze the story. Ambient page motion is safe to disable. */
 @media (prefers-reduced-motion: reduce) {

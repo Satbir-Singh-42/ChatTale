@@ -1,6 +1,112 @@
+import type { ReactNode } from "react"
 import type { CastMember, Settings, TimedEvent } from "./types"
 import { findMember, initials, autoTimestamp } from "./lib"
 import { IconEnter, IconExit, IconSmile } from "./icons"
+
+/**
+ * Format message text with Discord mention pills and markdown:
+ * - @everyone and @here: amber tag with pulse animation
+ * - @username: blurple / role-colored tag with pulse animation
+ * - #channel: channel tag
+ * - **bold**: bold text
+ * - *italic*: italic text
+ * - `code`: inline monospace code block
+ */
+export function formatMessageText(
+  text: string,
+  cast: CastMember[] = [],
+): ReactNode[] {
+  if (!text) return []
+
+  const regex =
+    /(@(?:everyone|here)\b)|(@\[[^\]]+\]|@[\w.-]+)|(#[a-zA-Z0-9_-]+)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(`[^`]+`)/gi
+
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    const [full, everyone, userTag, channelTag, bold, italic, code] = match
+    const key = `fmt-${match.index}-${full}`
+
+    if (everyone) {
+      parts.push(
+        <span key={key} className="ct-tag-everyone">
+          {full}
+        </span>,
+      )
+    } else if (userTag) {
+      const cleanName =
+        userTag.startsWith("@[") && userTag.endsWith("]")
+          ? "@" + userTag.slice(2, -1)
+          : userTag
+
+      const rawName = cleanName.slice(1).toLowerCase()
+      const member = cast.find(
+        (c) =>
+          c.name.toLowerCase() === rawName ||
+          c.name.toLowerCase().startsWith(rawName),
+      )
+
+      parts.push(
+        <span
+          key={key}
+          className="ct-tag-mention"
+          style={
+            member?.color
+              ? {
+                  color: member.color,
+                  borderColor: `${member.color}66`,
+                  backgroundColor: `${member.color}25`,
+                }
+              : undefined
+          }
+        >
+          {cleanName}
+        </span>,
+      )
+    } else if (channelTag) {
+      parts.push(
+        <span key={key} className="ct-tag-channel">
+          {full}
+        </span>,
+      )
+    } else if (bold) {
+      parts.push(
+        <strong key={key} className="font-bold text-white">
+          {bold.slice(2, -2)}
+        </strong>,
+      )
+    } else if (italic) {
+      parts.push(
+        <em key={key} className="italic text-txt">
+          {italic.slice(1, -1)}
+        </em>,
+      )
+    } else if (code) {
+      parts.push(
+        <code
+          key={key}
+          className="rounded bg-black/40 px-1 py-0.5 font-mono text-xs text-[#eb5757]"
+        >
+          {code.slice(1, -1)}
+        </code>,
+      )
+    }
+
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts
+}
 
 export function Avatar({
   member,
@@ -132,10 +238,20 @@ export default function ChatStage({
             )
           }
 
+          const isEveryone = /@(everyone|here)\b/i.test(ev.text)
+          const isTag = !isEveryone && /@[\w.-]+|@\[[^\]]+\]/.test(ev.text)
+          const mentionRowClass = isEveryone
+            ? "ct-mention-everyone"
+            : isTag
+              ? "ct-mention-tag"
+              : "border-l-2 border-transparent"
+
           return (
             <div
               key={ev.id}
-              className={`ct-pop flex gap-3 ${center ? "max-w-[85%]" : ""}`}
+              className={`ct-pop -mx-2 flex gap-3 rounded-r-md px-2 py-1 transition-colors ${
+                center ? "max-w-[85%]" : ""
+              } ${mentionRowClass}`}
             >
               <Avatar member={m} />
               <div className={center ? "min-w-0" : "min-w-0 flex-1"}>
@@ -156,7 +272,7 @@ export default function ChatStage({
                   </span>
                 </div>
                 <div className="mt-0.5 text-[15px] leading-snug break-words text-txt">
-                  {ev.text}
+                  {formatMessageText(ev.text, cast)}
                 </div>
                 {reacts.length ? (
                   <div className="mt-1.5 flex gap-1.5">
