@@ -88,6 +88,13 @@ export const IconDownload = svg(
     <path d="M5 21h14" />
   </>,
 )
+export const IconUpload = svg(
+  <>
+    <path d="M12 15V3" />
+    <path d="M7 8l5-5 5 5" />
+    <path d="M5 21h14" />
+  </>,
+)
 export const IconImage = svg(
   <>
     <rect x="3" y="3" width="18" height="18" rx="2" />

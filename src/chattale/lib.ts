@@ -143,6 +143,20 @@ export function parseScript(
       })
       continue
     }
+    const react = t.match(/^\[(.+?)\s+reacts(?::\s*(.+))?\]$/i)
+    if (react) {
+      const m = ensure(react[1])
+      events.push({
+        id: uid(),
+        type: "reaction",
+        userId: m.id,
+        text: "",
+        emoji: react[2]?.trim() ?? "",
+        timing: "auto",
+        timestamp: "",
+      })
+      continue
+    }
     const msg = t.match(/^([^:]{1,32}):\s*(.+)$/)
     if (msg) {
       const m = ensure(msg[1].trim())
@@ -158,6 +172,31 @@ export function parseScript(
     }
   }
   return { events, cast: nextCast }
+}
+
+/**
+ * Serialize a list of events back into the script text format that
+ * parseScript understands, so the backup file is a round-trippable .txt.
+ *
+ * Format:
+ *   Name: message text
+ *   [Name joins]
+ *   [Name leaves]
+ *   [Name reacts: emoji]   ← reaction (emoji optional)
+ */
+export function eventsToScript(events: StoryEvent[], cast: CastMember[]): string {
+  return events
+    .map((ev) => {
+      const name = cast.find((c) => c.id === ev.userId)?.name ?? "Unknown"
+      if (ev.type === "join") return `[${name} joins]`
+      if (ev.type === "leave") return `[${name} leaves]`
+      if (ev.type === "reaction") {
+        return ev.emoji ? `[${name} reacts: ${ev.emoji}]` : `[${name} reacts]`
+      }
+      // message
+      return `${name}: ${ev.text}`
+    })
+    .join("\n")
 }
 
 export const defaultSettings: Settings = {

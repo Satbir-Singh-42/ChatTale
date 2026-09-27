@@ -19,6 +19,7 @@ import {
   fmtTime,
   findMember,
   parseScript,
+  eventsToScript,
   uid,
 } from "./chattale/lib"
 import type {
@@ -46,6 +47,7 @@ import {
   IconSmile,
   IconSpark,
   IconTrash,
+  IconUpload,
   IconVolume,
 } from "./chattale/icons"
 
@@ -522,13 +524,15 @@ function StoryEditor({
     URL.revokeObjectURL(url)
   }
 
-  const downloadProject = () => {
-    const data = JSON.stringify({ cast, events, settings }, null, 2)
-    const blob = new Blob([data], { type: "application/json" })
+  const downloadScript = () => {
+    const content = eventsToScript(events, cast)
+    const blob = new Blob([content || SCRIPT_TEMPLATE], {
+      type: "text/plain;charset=utf-8",
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${settings.channel || "chattale"}-project.json`
+    a.download = `${settings.channel || "chattale"}-script.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -537,8 +541,48 @@ function StoryEditor({
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      setScript(String(reader.result ?? ""))
-      setQuick(true)
+      const content = String(reader.result ?? "").trim()
+      if (!content) return
+
+      // Support JSON project restore if user uploaded a .json backup
+      try {
+        const json = JSON.parse(content)
+        if (json && Array.isArray(json.events)) {
+          if (Array.isArray(json.cast)) setCast(json.cast)
+          if (json.settings) setSettings(json.settings)
+          setEvents(json.events)
+          setScript("")
+          setQuick(false)
+          return
+        }
+      } catch {
+        // Not JSON, continue with text script parsing
+      }
+
+      // Parse text script (.txt, .md)
+      const { events: parsed, cast: nextCast } = parseScript(content, cast)
+      if (!parsed.length) {
+        alert(
+          "No valid script lines found in the file.\\n\\nFormat:\\nName: message\\n[Name joins]\\n[Name leaves]",
+        )
+        return
+      }
+
+      setCast(nextCast)
+      if (events.length > 0) {
+        const replace = window.confirm(
+          `Found ${parsed.length} script beat(s).\\n\\nClick OK to REPLACE current beats.\\nClick Cancel to APPEND them.`,
+        )
+        if (replace) {
+          setEvents(parsed)
+        } else {
+          setEvents([...events, ...parsed])
+        }
+      } else {
+        setEvents(parsed)
+      }
+      setScript("")
+      setQuick(false)
     }
     reader.readAsText(file)
   }
@@ -588,19 +632,37 @@ function StoryEditor({
             })}
             <Btn
               variant="outline"
-              onClick={() => setQuick((q) => !q)}
+              onClick={() => fileRef.current?.click()}
               className="ml-auto"
+              title="Upload script (.txt, .md, .json)"
             >
-              <IconSpark size={15} /> Quick add
+              <IconUpload size={15} /> Upload script
             </Btn>
             <Btn
               variant="outline"
-              onClick={downloadProject}
-              title="Download project (.json)"
+              onClick={downloadScript}
+              title="Export / backup script (.txt)"
             >
-              <IconDownload size={15} /> Backup
+              <IconDownload size={15} /> Export script
+            </Btn>
+            <Btn
+              variant="outline"
+              onClick={() => setQuick((q) => !q)}
+            >
+              <IconSpark size={15} /> Quick add
             </Btn>
           </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".txt,.md,text/plain,.json"
+            className="hidden"
+            onChange={(e) => {
+              uploadScript(e.target.files?.[0])
+              e.target.value = ""
+            }}
+          />
 
           {!cast.length && (
             <Card className="mb-4 border-dashed p-4 text-sm text-txt-muted">
@@ -644,19 +706,8 @@ function StoryEditor({
                   onClick={() => fileRef.current?.click()}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs font-medium text-txt-muted transition hover:border-white/20 hover:text-txt"
                 >
-                  <IconDownload size={14} className="rotate-180" /> Upload
-                  script
+                  <IconUpload size={14} /> Upload script
                 </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".txt,.md,text/plain"
-                  className="hidden"
-                  onChange={(e) => {
-                    uploadScript(e.target.files?.[0])
-                    e.target.value = ""
-                  }}
-                />
                 <Btn onClick={runImport} className="ml-auto">
                   Import lines
                 </Btn>
@@ -820,16 +871,29 @@ function StoryEditor({
               />
             </Field>
 
-            {/* ── Footer stats + backup ── */}
+            {/* ── Footer stats + script export/upload ── */}
             <div className="flex items-center justify-between border-t border-white/5 pt-3 text-xs text-txt-faint">
               <span>{events.length} beats</span>
               <span className="inline-flex items-center gap-1">
                 <IconClock size={13} /> {fmtTime(totalDur)} runtime
               </span>
             </div>
-            <Btn variant="ghost" onClick={downloadProject} className="w-full">
-              <IconDownload size={14} /> Download project (.json)
-            </Btn>
+            <div className="grid grid-cols-2 gap-2">
+              <Btn
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                className="w-full text-xs"
+              >
+                <IconUpload size={14} /> Upload script
+              </Btn>
+              <Btn
+                variant="outline"
+                onClick={downloadScript}
+                className="w-full text-xs"
+              >
+                <IconDownload size={14} /> Export (.txt)
+              </Btn>
+            </div>
           </Card>
         </aside>
       </div>
