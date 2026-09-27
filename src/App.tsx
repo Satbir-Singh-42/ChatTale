@@ -117,8 +117,8 @@ export default function App() {
     <div className="relative flex min-h-screen flex-col text-txt">
       <div className="ct-backdrop" />
 
-      <header className="sticky top-0 z-30 border-b border-white/5">
-        <div className="ct-glass mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+      <header className="ct-glass ct-nav sticky top-0 z-30">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-6">
           <button
             onClick={() => setStep("home")}
             className="flex items-center gap-2.5"

@@ -72,6 +72,14 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Full-width sticky nav. Pairs with .ct-glass (defined above, so this wins on
+   source order) and collapses the top/side borders, leaving just the bottom
+   hairline. Without it the bar reads as a floating panel inset from the
+   viewport edges on any screen wider than max-w-6xl. */
+.ct-nav {
+  border-width: 0 0 1px;
+}
+
 .ct-card-hl {
   position: relative;
 }

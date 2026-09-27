@@ -233,7 +233,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
   return (
     <div className="relative z-10">
       {/* HERO */}
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pt-16 pb-24 lg:grid-cols-[1.1fr_0.9fr] lg:pt-24">
+      <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-16 pb-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:pt-24">
         <div className="ct-rise">
           <Pill>
             <span className="h-1.5 w-1.5 rounded-full bg-online" /> New ·
@@ -278,7 +278,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="mx-auto max-w-6xl scroll-mt-24 px-6 pb-24">
+      <section id="how" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
         <div className="mb-12 text-center">
           <div className="text-xs font-semibold tracking-[0.12em] text-blurple-hi uppercase">
             How it works
@@ -318,7 +318,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       {/* FEATURES */}
       <section
         id="features"
-        className="mx-auto max-w-6xl scroll-mt-24 px-6 pb-24"
+        className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6"
       >
         <div className="mb-10 text-center">
           <div className="text-xs font-semibold tracking-[0.12em] text-blurple-hi uppercase">
@@ -349,7 +349,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-6xl scroll-mt-24 px-6 pb-24">
+      <section id="faq" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
         <div className="mb-10 text-center">
           <div className="text-xs font-semibold tracking-[0.12em] text-blurple-hi uppercase">
             FAQ
@@ -362,7 +362,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* CTA */}
-      <section id="start" className="mx-auto max-w-6xl scroll-mt-24 px-6 pb-24">
+      <section id="start" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-24 sm:px-6">
         <Card glow className="overflow-hidden p-10 text-center sm:p-16">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 flex justify-center">

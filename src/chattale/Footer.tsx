@@ -40,7 +40,7 @@ export default function Footer({ onHome }: FooterProps) {
 
   return (
     <footer className="relative z-10 mt-auto border-t border-white/5">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-3 sm:px-6">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blurple text-white">
@@ -79,7 +79,7 @@ export default function Footer({ onHome }: FooterProps) {
       </div>
 
       <div className="border-t border-white/5">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-txt-faint sm:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-5 text-xs text-txt-faint sm:flex-row sm:px-6">
           <p>
             &copy; {new Date().getFullYear()} ChatTale. All rights reserved.
           </p>
