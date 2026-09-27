@@ -1002,35 +1002,6 @@ function EventRow({
     null,
   )
 
-  const insertTag = (tag: string) => {
-    const input = textRef.current
-    const current = ev.text || ""
-
-    if (!input) {
-      onPatch({ text: current ? `${current} ${tag} ` : `${tag} ` })
-      return
-    }
-
-    const start = input.selectionStart ?? current.length
-    const end = input.selectionEnd ?? current.length
-
-    // Smart spacing around the inserted tag
-    const needsPrefix = start > 0 && current[start - 1] !== " "
-    const needsSuffix = end < current.length && current[end] !== " "
-
-    const insertion = `${needsPrefix ? " " : ""}${tag}${needsSuffix ? " " : " "}`
-    const nextText = current.slice(0, start) + insertion + current.slice(end)
-
-    onPatch({ text: nextText })
-
-    const nextPos = start + insertion.length
-    requestAnimationFrame(() => {
-      input.focus()
-      input.setSelectionRange(nextPos, nextPos)
-    })
-    setTagMenu(null)
-  }
-
   const suggestions = useMemo(() => {
     if (!tagMenu) return []
     const q = tagMenu.query.toLowerCase()
@@ -1176,7 +1147,8 @@ function EventRow({
                   ref={textRef}
                   className="ct-input text-[15px]"
                   value={ev.text}
-                  placeholder="What do they say?  (Enter for next line, @ for tags)"
+                  placeholder="What do they say?  (Enter for next line, @ to mention)"
+                  onBlur={() => setTimeout(() => setTagMenu(null), 150)}
                   onChange={(e) => {
                     const val = e.target.value
                     onPatch({ text: val })
@@ -1282,64 +1254,13 @@ function EventRow({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
                 <input
                   className="ct-input w-28 py-1 text-xs"
                   placeholder="9:03 AM"
                   value={ev.timestamp}
                   onChange={(e) => onPatch({ timestamp: e.target.value })}
                 />
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-[11px] text-txt-faint">
-                    Insert at cursor:
-                  </span>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => insertTag("@everyone")}
-                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25 active:scale-95"
-                    title="Insert @everyone at current cursor position"
-                  >
-                    @everyone
-                  </button>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => insertTag("@here")}
-                    className="rounded bg-[#faa61a]/15 px-1.5 py-0.5 text-[11px] font-semibold text-[#f0b232] transition hover:bg-[#faa61a]/25 active:scale-95"
-                    title="Insert @here at current cursor position"
-                  >
-                    @here
-                  </button>
-                  {cast
-                    .filter((c) => c.id !== ev.userId)
-                    .map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() =>
-                          insertTag(
-                            c.name.includes(" ")
-                              ? `@[${c.name}]`
-                              : `@${c.name}`,
-                          )
-                        }
-                        className="rounded bg-blurple/20 px-1.5 py-0.5 text-[11px] font-semibold text-[#c9cdfb] transition hover:bg-blurple/30 active:scale-95"
-                        style={
-                          c.color
-                            ? {
-                                color: c.color,
-                                backgroundColor: `${c.color}22`,
-                              }
-                            : undefined
-                        }
-                        title={`Insert @${c.name} at current cursor position`}
-                      >
-                        @{c.name}
-                      </button>
-                    ))}
-                </div>
               </div>
             </div>
           )}
