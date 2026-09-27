@@ -43,9 +43,7 @@ export default function Footer({ onHome }: FooterProps) {
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-3 sm:px-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blurple text-white">
-              <IconChat size={16} />
-            </div>
+            <img src="/favicon.svg" alt="ChatTale logo" className="h-8 w-8" />
             <span className="font-display text-base font-bold text-white">
               ChatTale
             </span>
