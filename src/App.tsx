@@ -125,9 +125,7 @@ export default function App() {
             onClick={() => setStep("home")}
             className="flex items-center gap-2.5"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blurple text-white shadow-[0_6px_18px_-6px_rgba(88,101,242,0.9)]">
-              <IconChat size={18} />
-            </div>
+            <img src="/favicon.svg" alt="ChatTale logo" className="h-9 w-9" />
             <span className="font-display text-lg font-bold tracking-tight text-white">
               ChatTale
             </span>
