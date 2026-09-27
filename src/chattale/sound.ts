@@ -15,10 +15,21 @@ function audio(): AudioContext | null {
   return ctx
 }
 
+let dest: MediaStreamAudioDestinationNode | null = null
+
+export function getAudioStream() {
+  const a = audio()
+  if (!a) return null
+  if (!dest) dest = a.createMediaStreamDestination()
+  return dest.stream
+}
+
 export function playMessagePing() {
   const a = audio()
   if (!a) return
   if (a.state === "suspended") void a.resume()
+  
+  if (!dest) dest = a.createMediaStreamDestination()
 
   const now = a.currentTime
   // two ascending notes with a soft, quick decay
@@ -36,7 +47,12 @@ export function playMessagePing() {
     gain.gain.setValueAtTime(0.0001, start)
     gain.gain.linearRampToValueAtTime(0.16, start + 0.012)
     gain.gain.exponentialRampToValueAtTime(0.0001, start + n.dur)
+    
+    // Connect to speakers
     osc.connect(gain).connect(a.destination)
+    // Connect to the stream destination for video recording
+    gain.connect(dest)
+    
     osc.start(start)
     osc.stop(start + n.dur + 0.03)
   }

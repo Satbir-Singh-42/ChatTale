@@ -6,7 +6,7 @@ import Footer from "./chattale/Footer"
 import { Btn, Card, Field, SectionHead } from "./chattale/ui"
 import Dropdown from "./chattale/Dropdown"
 import ColorField from "./chattale/ColorField"
-import { playMessagePing } from "./chattale/sound"
+import { playMessagePing, getAudioStream } from "./chattale/sound"
 import { clearProject, loadProject, saveProject } from "./chattale/storage"
 import { toCanvas } from "html-to-image"
 import {
@@ -79,7 +79,7 @@ const SPEED_PRESETS: [string, number][] = [
 const EVENT_META: Record<EventType, {
   label: string
   color: string
-  Icon: ComponentType<{ size?: number, className?: string }>
+  Icon: ComponentType<{ size?: number; className?: string }>
 }> = {
   message: { label: "Message", color: "#5865f2", Icon: IconMessage },
   join: { label: "Join", color: "#23a55a", Icon: IconEnter },
@@ -123,11 +123,9 @@ export default function App() {
             onClick={() => setStep("home")}
             className="flex items-center gap-2.5"
           >
-            <img
-              src="/favicon.svg"
-              alt="ChatTale logo"
-              className="h-9 w-9 drop-shadow-[0_4px_12px_rgba(88,101,242,0.3)]"
-            />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blurple text-white shadow-[0_6px_18px_-6px_rgba(88,101,242,0.9)]">
+              <IconChat size={18} />
+            </div>
             <span className="font-display text-lg font-bold tracking-tight text-white">
               ChatTale
             </span>
@@ -197,8 +195,8 @@ export default function App() {
 
 /* ---------------------------------- Stepper --------------------------------- */
 
-function Stepper({ step, setStep }: { step: Step, setStep: (s: Step) => void }) {
-  const items: { key: Step, label: string, n: number }[] = [
+function Stepper({ step, setStep }: { step: Step; setStep: (s: Step) => void }) {
+  const items: { key: Step; label: string; n: number }[] = [
     { key: "cast", label: "Cast", n: 1 },
     { key: "story", label: "Storyboard", n: 2 },
     { key: "preview", label: "Preview", n: 3 },
@@ -211,16 +209,14 @@ function Stepper({ step, setStep }: { step: Step, setStep: (s: Step) => void }) 
           <button
             key={it.key}
             onClick={() => setStep(it.key)}
-            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium transition-all ${
-              active
+            className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium transition-all ${active
                 ? "bg-blurple text-white shadow-[0_6px_18px_-8px_rgba(88,101,242,0.9)]"
                 : "text-txt-muted hover:bg-white/5 hover:text-txt"
-            }`}
+              }`}
           >
             <span
-              className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                active ? "bg-white/25" : "bg-white/10"
-              }`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${active ? "bg-white/25" : "bg-white/10"
+                }`}
             >
               {it.n}
             </span>
@@ -291,9 +287,9 @@ function CastBuilder({
             No characters yet
           </p>
           <p className="max-w-md text-sm text-txt-muted">
-            This step is optional — skip straight to the storyboard and use
-            Quick add, which creates characters from the names in your script.
-            You can also add one now and rename it later.
+            This step is optional — skip straight to the storyboard and use Quick
+            add, which creates characters from the names in your script. You can
+            also add one now and rename it later.
           </p>
         </Card>
       )}
@@ -347,9 +343,8 @@ function CastBuilder({
                     <button
                       key={c}
                       onClick={() => patch(m.id, { color: c })}
-                      className={`h-6 w-6 rounded-full ring-2 transition ${
-                        m.color === c ? "ring-white" : "ring-transparent"
-                      }`}
+                      className={`h-6 w-6 rounded-full ring-2 transition ${m.color === c ? "ring-white" : "ring-transparent"
+                        }`}
                       style={{ background: c }}
                       aria-label={c}
                     />
@@ -362,11 +357,10 @@ function CastBuilder({
                     <button
                       key={b || "none"}
                       onClick={() => patch(m.id, { badge: b })}
-                      className={`rounded-lg px-2 py-1 text-xs font-semibold transition ${
-                        m.badge === b
+                      className={`rounded-lg px-2 py-1 text-xs font-semibold transition ${m.badge === b
                           ? "bg-blurple text-white"
                           : "bg-white/5 text-txt-muted hover:text-txt"
-                      }`}
+                        }`}
                     >
                       {b || "None"}
                     </button>
@@ -501,7 +495,7 @@ function StoryEditor({
     const j = idx + dir
     if (j < 0 || j >= events.length) return
     const next = [...events]
-    ;[next[idx], next[j]] = [next[j], next[idx]]
+      ;[next[idx], next[j]] = [next[j], next[idx]]
     setEvents(next)
   }
 
@@ -528,17 +522,6 @@ function StoryEditor({
     URL.revokeObjectURL(url)
   }
 
-  const downloadProject = () => {
-    const data = JSON.stringify({ cast, events, settings }, null, 2)
-    const blob = new Blob([data], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${settings.channel || "chattale"}-project.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const uploadScript = (file?: File) => {
     if (!file) return
     const reader = new FileReader()
@@ -550,8 +533,7 @@ function StoryEditor({
   }
 
   const totalDur = events.reduce(
-    (a, e) =>
-      a + eventDuration(e, settings.typingSpeed, settings.intervalSpeed),
+    (a, e) => a + eventDuration(e, settings.typingSpeed),
     0,
   )
 
@@ -599,13 +581,6 @@ function StoryEditor({
               className="ml-auto"
             >
               <IconSpark size={15} /> Quick add
-            </Btn>
-            <Btn
-              variant="outline"
-              onClick={downloadProject}
-              title="Download project"
-            >
-              <IconDownload size={15} /> Backup
             </Btn>
           </div>
 
@@ -721,11 +696,10 @@ function StoryEditor({
                   <button
                     key={val}
                     onClick={() => setSettings({ ...settings, mode: val })}
-                    className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
-                      settings.mode === val
+                    className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${settings.mode === val
                         ? "bg-blurple text-white shadow-[0_6px_16px_-8px_rgba(88,101,242,0.9)]"
                         : "text-txt-muted hover:text-txt"
-                    }`}
+                      }`}
                   >
                     {label}
                   </button>
@@ -741,11 +715,10 @@ function StoryEditor({
                   <button
                     key={val}
                     onClick={() => setSettings({ ...settings, align: val })}
-                    className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
-                      settings.align === val
+                    className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${settings.align === val
                         ? "bg-blurple text-white shadow-[0_6px_16px_-8px_rgba(88,101,242,0.9)]"
                         : "text-txt-muted hover:text-txt"
-                    }`}
+                      }`}
                   >
                     {label}
                   </button>
@@ -760,11 +733,10 @@ function StoryEditor({
                     onClick={() =>
                       setSettings({ ...settings, typingSpeed: val })
                     }
-                    className={`flex-1 rounded-lg px-1.5 py-1.5 text-xs font-medium transition ${
-                      settings.typingSpeed === val
+                    className={`flex-1 rounded-lg px-1.5 py-1.5 text-xs font-medium transition ${settings.typingSpeed === val
                         ? "bg-blurple text-white shadow-[0_6px_16px_-8px_rgba(88,101,242,0.9)]"
                         : "text-txt-muted hover:text-txt"
-                    }`}
+                      }`}
                   >
                     {label}
                   </button>
@@ -849,9 +821,8 @@ function InsertZone({ onAdd }: { onAdd: (type: EventType) => void }) {
       className="group/insert relative flex h-5 items-center justify-center pl-8"
     >
       <div
-        className={`pointer-events-none absolute inset-x-8 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-blurple/50 to-transparent transition-opacity ${
-          open ? "opacity-100" : "opacity-0 group-hover/insert:opacity-100"
-        }`}
+        className={`pointer-events-none absolute inset-x-8 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-blurple/50 to-transparent transition-opacity ${open ? "opacity-100" : "opacity-0 group-hover/insert:opacity-100"
+          }`}
       />
       {open ? (
         <div className="ct-glass relative z-20 flex items-center gap-1 rounded-xl border border-white/10 p-1 shadow-2xl">
@@ -1060,11 +1031,10 @@ function Segmented({
           <button
             key={val}
             onClick={() => onChange(val)}
-            className={`min-w-0 flex-1 truncate rounded-md px-1.5 py-1 text-[11px] font-medium transition ${
-              value === val
+            className={`min-w-0 flex-1 truncate rounded-md px-1.5 py-1 text-[11px] font-medium transition ${value === val
                 ? "bg-blurple text-white shadow-[0_6px_16px_-8px_rgba(88,101,242,0.9)]"
                 : "text-txt-muted hover:text-txt"
-            }`}
+              }`}
           >
             {text}
           </button>
@@ -1102,8 +1072,8 @@ function Preview({
       ? "w-full max-w-[880px]"
       : "w-full max-w-[560px]"
   const { timed, total } = useMemo(
-    () => buildTimeline(events, settings.typingSpeed, settings.intervalSpeed),
-    [events, settings.typingSpeed, settings.intervalSpeed],
+    () => buildTimeline(events, settings.typingSpeed),
+    [events, settings.typingSpeed],
   )
   const [t, setT] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -1120,7 +1090,8 @@ function Preview({
     if (!playing) return
     last.current = performance.now()
     const tick = (now: number) => {
-      const dt = now - last.current
+      // Cap dt at 100ms so we don't jump over messages if the browser hangs
+      const dt = Math.min(now - last.current, 100)
       last.current = now
       setT((prev) => {
         const next = prev + dt
@@ -1241,6 +1212,14 @@ function Preview({
         (m) => MediaRecorder.isTypeSupported(m),
       ) ?? "video/webm"
     const stream = canvas.captureStream(30)
+    
+    // Add audio track if available
+    const audioStream = getAudioStream()
+    if (audioStream) {
+      const audioTrack = audioStream.getAudioTracks()[0]
+      if (audioTrack) stream.addTrack(audioTrack)
+    }
+
     const rec = new MediaRecorder(stream, {
       mimeType: mime,
       videoBitsPerSecond: 8_000_000,
@@ -1310,8 +1289,8 @@ function Preview({
         }
       />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-8 lg:flex-row lg:items-start lg:gap-12">
-        <div className="relative flex w-full justify-center lg:flex-1 lg:justify-end">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative flex w-full justify-center">
           <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-blurple/15 blur-3xl" />
           <div
             ref={frameRef}
@@ -1341,127 +1320,109 @@ function Preview({
           </div>
         </div>
 
-        {/* Settings and controls sidebar */}
-        <div className="flex w-full shrink-0 flex-col gap-6 sm:max-w-[520px] lg:max-w-[360px]">
-          {/* live scene settings */}
-          <Card className="grid w-full gap-x-4 gap-y-3 p-4 sm:grid-cols-2 lg:grid-cols-1">
-            <Segmented
-              label="Aspect"
-              value={settings.aspect}
-              onChange={(v) =>
-                setSettings({ ...settings, aspect: v as Settings["aspect"] })
-              }
-              options={[
-                ["9:16", "9:16"],
-                ["1:1", "1:1"],
-                ["16:9", "16:9"],
-              ]}
-            />
-            <Segmented
-              label="Flow"
-              value={settings.mode}
-              onChange={(v) =>
-                setSettings({ ...settings, mode: v as Settings["mode"] })
-              }
-              options={[
-                ["stack", "Stack"],
-                ["solo", "Solo"],
-              ]}
-            />
-            <Segmented
-              label="Alignment"
-              value={settings.align}
-              onChange={(v) =>
-                setSettings({ ...settings, align: v as Settings["align"] })
-              }
-              options={[
-                ["left", "Left"],
-                ["center", "Center"],
-              ]}
-            />
-            <Segmented
-              label="Typing speed"
-              value={String(settings.typingSpeed)}
-              onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
-              options={SPEED_PRESETS.map(([label, val]) => [
-                String(val),
-                label,
-              ])}
-            />
-            <Segmented
-              label="Message pace"
-              value={String(settings.intervalSpeed || 1)}
-              onChange={(v) => setSettings({ ...settings, intervalSpeed: +v })}
-              options={SPEED_PRESETS.map(([label, val]) => [
-                String(val),
-                label,
-              ])}
-            />
-          </Card>
+        {/* live scene settings — compact 2×2 grid of segmented controls */}
+        <Card className="grid w-full max-w-[520px] gap-x-4 gap-y-2.5 p-4 sm:grid-cols-2">
+          <Segmented
+            label="Aspect"
+            value={settings.aspect}
+            onChange={(v) =>
+              setSettings({ ...settings, aspect: v as Settings["aspect"] })
+            }
+            options={[
+              ["9:16", "9:16"],
+              ["1:1", "1:1"],
+              ["16:9", "16:9"],
+            ]}
+          />
+          <Segmented
+            label="Flow"
+            value={settings.mode}
+            onChange={(v) =>
+              setSettings({ ...settings, mode: v as Settings["mode"] })
+            }
+            options={[
+              ["stack", "Stack"],
+              ["solo", "Solo"],
+            ]}
+          />
+          <Segmented
+            label="Alignment"
+            value={settings.align}
+            onChange={(v) =>
+              setSettings({ ...settings, align: v as Settings["align"] })
+            }
+            options={[
+              ["left", "Left"],
+              ["center", "Center"],
+            ]}
+          />
+          <Segmented
+            label="Typing speed"
+            value={String(settings.typingSpeed)}
+            onChange={(v) => setSettings({ ...settings, typingSpeed: +v })}
+            options={SPEED_PRESETS.map(([label, val]) => [String(val), label])}
+          />
+        </Card>
 
-          <Card className="w-full p-3">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggle}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
-              >
-                {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
-              </button>
-              <button
-                onClick={restart}
-                className="text-txt-muted transition hover:text-txt"
-                aria-label="Restart"
-              >
-                <IconRestart size={18} />
-              </button>
-              <span className="w-10 text-xs tabular-nums text-txt-muted">
-                {fmtTime(t)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={total}
-                value={t}
-                onChange={(e) => {
-                  setPlaying(false)
-                  setT(+e.target.value)
-                }}
-                className="h-1 flex-1 accent-blurple"
-              />
-              <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
-                {fmtTime(total)}
-              </span>
-              <button
-                onClick={() => {
-                  setSound((s) => !s)
-                  if (!sound) playMessagePing()
-                }}
-                aria-pressed={sound}
-                aria-label={
-                  sound ? "Mute message sound" : "Unmute message sound"
-                }
-                title={sound ? "Message sound on" : "Message sound off"}
-                className={`relative shrink-0 transition ${
-                  sound
-                    ? "text-blurple hover:text-blurple-hi"
-                    : "text-txt-faint hover:text-txt"
+        <Card className="w-full max-w-[520px] p-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggle}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blurple text-white shadow-[0_8px_20px_-8px_rgba(88,101,242,0.9)] transition hover:bg-blurple-hi active:scale-95"
+            >
+              {playing ? <IconPause size={18} /> : <IconPlay size={18} />}
+            </button>
+            <button
+              onClick={restart}
+              className="text-txt-muted transition hover:text-txt"
+              aria-label="Restart"
+            >
+              <IconRestart size={18} />
+            </button>
+            <span className="w-10 text-xs tabular-nums text-txt-muted">
+              {fmtTime(t)}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={total}
+              value={t}
+              onChange={(e) => {
+                setPlaying(false)
+                setT(+e.target.value)
+              }}
+              className="h-1 flex-1 accent-blurple"
+            />
+            <span className="w-10 text-right text-xs tabular-nums text-txt-faint">
+              {fmtTime(total)}
+            </span>
+            <button
+              onClick={() => {
+                setSound((s) => !s)
+                if (!sound) playMessagePing()
+              }}
+              aria-pressed={sound}
+              aria-label={sound ? "Mute message sound" : "Unmute message sound"}
+              title={sound ? "Message sound on" : "Message sound off"}
+              className={`relative shrink-0 transition ${sound
+                  ? "text-blurple hover:text-blurple-hi"
+                  : "text-txt-faint hover:text-txt"
                 }`}
-              >
-                <IconVolume size={18} />
-                {!sound && (
-                  <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
-                )}
-              </button>
-            </div>
-            <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
-              <Kbd>Space</Kbd> play
-              <Kbd>R</Kbd> restart
-              <Kbd>←</Kbd>
-              <Kbd>→</Kbd> scrub
-              <Kbd>M</Kbd> mute
-            </p>
-          </Card>
-        </div>
+            >
+              <IconVolume size={18} />
+              {!sound && (
+                <span className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-current" />
+              )}
+            </button>
+          </div>
+          <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-txt-faint">
+            <Kbd>Space</Kbd> play
+            <Kbd>R</Kbd> restart
+            <Kbd>←</Kbd>
+            <Kbd>→</Kbd> scrub
+            <Kbd>M</Kbd> mute
+          </p>
+        </Card>
       </div>
     </section>
   )
